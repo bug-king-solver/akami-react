@@ -1,51 +1,103 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box, TextField, Typography, Container } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Box, TextField, Typography, Container, CircularProgress, Alert } from '@mui/material';
 import { FixedSizeList as List } from 'react-window';
 
 const RandomStringGenerator: React.FC = () => {
+  // State declarations
   const [wordCount, setWordCount] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [occurrenceCount, setOccurrenceCount] = useState<number>(0);
   const [wordCountError, setWordCountError] = useState<string>('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [generatedWords, setGeneratedWords] = useState<string[]>([]);
 
-  const generateRandomWords = (count: number): string[] => {
-    return Array.from({ length: count }, () =>
-      Math.random().toString(36).substring(2, 7)
-    );
-  };
-
-  const generatedWords = useMemo(() => {
-    if (wordCount < 1) {
+  /**
+   * Validates the word count input
+   * @param count Number of words to generate
+   * @returns Whether the count is valid or not
+   */
+  const validateWordCount = useCallback((count: number): boolean => {
+    if (count < 1) {
       setWordCountError('Word count must be a positive integer');
-      return [];
-    } else {
-      setWordCountError('');
-      return generateRandomWords(wordCount);
+      setGeneratedWords([]);
+      return false;
     }
-  }, [wordCount]);
+    setWordCountError('');
+    return true;
+  }, []);
 
+  /**
+   * Generates a random array of words asynchronously with simulated delay
+   * @param count Number of words to generate
+   * @returns A promise that resolves with an array of words
+   */
+  const generateRandomWordsAsync = useCallback(async (count: number): Promise<string[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const words = Array.from({ length: count }, () =>
+          Math.random().toString(36).substring(2, 7)
+        );
+        resolve(words);
+      }, 500);
+    });
+  }, []);
+
+  // Effect to handle asynchronous word generation
   useEffect(() => {
+    const generateWords = async () => {
+      if (!validateWordCount(wordCount)) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const words = await generateRandomWordsAsync(wordCount);
+        setGeneratedWords(words);
+      } catch (error) {
+        setWordCountError('Error generating words. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateWords();
+  }, [wordCount, validateWordCount, generateRandomWordsAsync]);
+
+  // Memoized search results to avoid unnecessary calculations
+  const memoizedSearchResults = useMemo(() => {
     if (searchTerm.trim() === '') {
-      setOccurrenceCount(0);
-      setSearchResults([]);
-    } else {
-      const results = generatedWords.filter((word) => word.includes(searchTerm));
-      setSearchResults(results);
-      setOccurrenceCount(results.length);
+      return [];
     }
+    return generatedWords.filter((word) => word.includes(searchTerm));
   }, [searchTerm, generatedWords]);
 
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
-    <Typography variant="body2" style={style} noWrap>
-      {generatedWords[index]}
-    </Typography>
+  // Effect to update search results and occurrence count
+  useEffect(() => {
+    setSearchResults(memoizedSearchResults);
+    setOccurrenceCount(memoizedSearchResults.length);
+  }, [memoizedSearchResults]);
+
+  // Memoized Row renderer for virtualization of generated words
+  const Row = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => (
+      <Typography variant="body2" style={style} noWrap>
+        {generatedWords[index]}
+      </Typography>
+    ),
+    [generatedWords]
   );
 
-  const ResultRow = ({ index, style }: { index: number; style: React.CSSProperties }) => (
-    <Typography variant="body2" style={style} noWrap>
-      {searchResults[index]}
-    </Typography>
+  // Memoized Row renderer for virtualization of search results
+  const ResultRow = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => (
+      <Typography variant="body2" style={style} noWrap>
+        {searchResults[index]}
+      </Typography>
+    ),
+    [searchResults]
   );
 
   return (
@@ -54,6 +106,7 @@ const RandomStringGenerator: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Random String Generator and Search
         </Typography>
+        {wordCountError && <Alert severity="error">{wordCountError}</Alert>}
         <TextField
           label="Number of Words"
           type="number"
@@ -81,24 +134,30 @@ const RandomStringGenerator: React.FC = () => {
         <Typography variant="body1" my={2} aria-live="polite">
           Generated Words:
         </Typography>
-        <Box
-          sx={{
-            maxHeight: '180px',
-            overflowY: 'auto',
-            border: '1px solid #ccc',
-            padding: '8px',
-            marginBottom: '16px',
-          }}
-        >
-          <List
-            height={180}
-            itemCount={generatedWords.length}
-            itemSize={30}
-            width="100%"
+        {loading ? (
+          <Box display="flex" justifyContent="center" my={2}>
+            <CircularProgress aria-busy="true" aria-label="Loading..." />
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              maxHeight: '170px',
+              overflowY: 'auto',
+              border: '1px solid #ccc',
+              padding: '8px',
+              marginBottom: '16px',
+            }}
           >
-            {Row}
-          </List>
-        </Box>
+            <List
+              height={170}
+              itemCount={generatedWords.length}
+              itemSize={30}
+              width="100%"
+            >
+              {Row}
+            </List>
+          </Box>
+        )}
         <Typography variant="h6" my={2} aria-live="polite">
           Occurrences of "{searchTerm}": {occurrenceCount}
         </Typography>
@@ -109,7 +168,7 @@ const RandomStringGenerator: React.FC = () => {
             </Typography>
             <Box
               sx={{
-                maxHeight: '180px',
+                maxHeight: '170px',
                 overflowY: 'auto',
                 border: '1px solid #ccc',
                 padding: '8px',
@@ -117,7 +176,7 @@ const RandomStringGenerator: React.FC = () => {
               }}
             >
               <List
-                height={200}
+                height={170}
                 itemCount={searchResults.length}
                 itemSize={30}
                 width="100%"
