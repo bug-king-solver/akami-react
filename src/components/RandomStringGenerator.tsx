@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, TextField, Typography, Container } from '@mui/material';
 import { FixedSizeList as List } from 'react-window';
 
 const RandomStringGenerator: React.FC = () => {
   const [wordCount, setWordCount] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [generatedWords, setGeneratedWords] = useState<string[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState<number>(0);
   const [wordCountError, setWordCountError] = useState<string>('');
 
@@ -15,23 +14,22 @@ const RandomStringGenerator: React.FC = () => {
     );
   };
 
-  useEffect(() => {
+  const generatedWords = useMemo(() => {
     if (wordCount < 1) {
       setWordCountError('Word count must be a positive integer');
-      setGeneratedWords([]);
+      return [];
     } else {
       setWordCountError('');
-      const words = generateRandomWords(wordCount);
-      setGeneratedWords(words);
+      return generateRandomWords(wordCount);
     }
   }, [wordCount]);
 
   useEffect(() => {
-    if (generatedWords.length > 0) {
+    if (searchTerm.trim() === '') {
+      setOccurrenceCount(0);
+    } else {
       const count = generatedWords.filter((word) => word.includes(searchTerm)).length;
       setOccurrenceCount(count);
-    } else {
-      setOccurrenceCount(0);
     }
   }, [searchTerm, generatedWords]);
 
