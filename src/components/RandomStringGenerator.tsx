@@ -7,6 +7,7 @@ const RandomStringGenerator: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [occurrenceCount, setOccurrenceCount] = useState<number>(0);
   const [wordCountError, setWordCountError] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
 
   const generateRandomWords = (count: number): string[] => {
     return Array.from({ length: count }, () =>
@@ -27,15 +28,23 @@ const RandomStringGenerator: React.FC = () => {
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setOccurrenceCount(0);
+      setSearchResults([]);
     } else {
-      const count = generatedWords.filter((word) => word.includes(searchTerm)).length;
-      setOccurrenceCount(count);
+      const results = generatedWords.filter((word) => word.includes(searchTerm));
+      setSearchResults(results);
+      setOccurrenceCount(results.length);
     }
   }, [searchTerm, generatedWords]);
 
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
     <Typography variant="body2" style={style} noWrap>
       {generatedWords[index]}
+    </Typography>
+  );
+
+  const ResultRow = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+    <Typography variant="body2" style={style} noWrap>
+      {searchResults[index]}
     </Typography>
   );
 
@@ -93,6 +102,31 @@ const RandomStringGenerator: React.FC = () => {
         <Typography variant="h6" my={2} aria-live="polite">
           Occurrences of "{searchTerm}": {occurrenceCount}
         </Typography>
+        {searchTerm.trim() !== '' && (
+          <>
+            <Typography variant="body1" my={2} aria-live="polite">
+              Search Results:
+            </Typography>
+            <Box
+              sx={{
+                maxHeight: '200px',
+                overflowY: 'auto',
+                border: '1px solid #ccc',
+                padding: '8px',
+                marginBottom: '16px',
+              }}
+            >
+              <List
+                height={200}
+                itemCount={searchResults.length}
+                itemSize={30}
+                width="100%"
+              >
+                {ResultRow}
+              </List>
+            </Box>
+          </>
+        )}
       </Box>
     </Container>
   );
