@@ -51,7 +51,7 @@ const RandomStringGenerator: React.FC = () => {
   return (
     <Container maxWidth="sm" role="main">
       <Box my={4}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h5" gutterBottom>
           Random String Generator and Search
         </Typography>
         <TextField
@@ -83,7 +83,7 @@ const RandomStringGenerator: React.FC = () => {
         </Typography>
         <Box
           sx={{
-            maxHeight: '200px',
+            maxHeight: '180px',
             overflowY: 'auto',
             border: '1px solid #ccc',
             padding: '8px',
@@ -91,7 +91,7 @@ const RandomStringGenerator: React.FC = () => {
           }}
         >
           <List
-            height={200}
+            height={180}
             itemCount={generatedWords.length}
             itemSize={30}
             width="100%"
@@ -109,7 +109,7 @@ const RandomStringGenerator: React.FC = () => {
             </Typography>
             <Box
               sx={{
-                maxHeight: '200px',
+                maxHeight: '180px',
                 overflowY: 'auto',
                 border: '1px solid #ccc',
                 padding: '8px',
